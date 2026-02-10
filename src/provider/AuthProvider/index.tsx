@@ -1,7 +1,7 @@
 "use client";
 import { BasicUserInfo } from "@/src/types/user";
 import { useRouter } from "next/navigation";
-import { createContext, ReactNode, useContext } from "react";
+import { createContext, ReactNode, useContext, useEffect } from "react";
 
 interface AuthContextType {
   basicUserInfor: BasicUserInfo;
@@ -25,8 +25,13 @@ interface Props {
 export default function AuthProvider({ children, basicUserInfor }: Props) {
   const router = useRouter();
 
+  useEffect(() => {
+    if (basicUserInfor == null) {
+      router.push("/signin");
+    }
+  }, [basicUserInfor, router]);
+
   if (basicUserInfor == null) {
-    router.push("/signin");
     return null;
   }
 

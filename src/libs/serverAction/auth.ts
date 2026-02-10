@@ -16,28 +16,18 @@ export async function signin(
 ) {
 	let url = "";
 	let payload = {};
-	if (signinType == "email") {
-		url = `${BaseUrl}/auth/loginWithEmail`;
-		payload = {
-			email: identifier,
-			password: password,
-		};
-	} else if (signinType == "username") {
 		url = `${BaseUrl}/auth/login`;
 		payload = {
 			username: identifier,
 			password: password,
 		};
-	}
 	try {
-		const res = await axios.put(url, payload, {
+		const res = await axios.post(url, payload, {
 			headers: customHeader(null),
 		});
 
-		console.log(res);
-
-		const headers = res.headers["set-cookie"];
-		if (!headers) {
+		const token = res.data.token;
+		if (!token) {
 			return {
 				success: false,
 				message: "Something went wrong",
@@ -46,7 +36,6 @@ export async function signin(
 			} as CustomResponse<null>;
 		}
 
-		const token = headers[0].split(";")[0].split("=")[1];
 		const cookieStore = cookies();
 		cookieStore.set("token", token, {
 			path: "/",

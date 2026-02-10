@@ -41,10 +41,9 @@ export async function refreshToken() {
 			data: newToken,
 		} as CustomResponse<string>;
 	} catch (error: any) {
-		console.error(error);
 		return {
 			success: false,
-			message: error.response,
+			message: error.response?.data?.message ?? "Failed to refresh token",
 			status: error.status,
 			data: null,
 		} as CustomResponse<null>;
@@ -55,7 +54,7 @@ export async function fetchInfo() {
 	const cookieStore = cookies();
 	const res = await refreshToken();
 	const token = res.data ?? cookieStore.get("token")?.value;
-	const url = `${BaseUrl}/api/info`;
+	const url = `${BaseUrl}/info`;
 
 	try {
 		const res = await axios.get(url, {
