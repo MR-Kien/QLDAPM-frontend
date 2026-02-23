@@ -37,8 +37,10 @@ export default function SignInForm() {
       loginFormData.password,
       loginMethod
     );
+    console.log("[handleSignIn] result:", res);
     if (res.success) {
       toast.success(res.message);
+      router.refresh();
       router.push("/market");
     } else {
       toast.error(res.message);

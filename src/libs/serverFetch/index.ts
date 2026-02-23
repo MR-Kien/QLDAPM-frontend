@@ -10,22 +10,24 @@ import { CoinData, CoinDetailData, CoinHistoryData } from "@/src/types/coin";
 export async function refreshToken() {
 	const cookieStore = cookies();
 	const token = cookieStore.get("token")?.value;
-	const header = customHeader(token);
+	if (!token) {
+		console.log("[refreshToken] No token in cookie, skipping refresh");
+		return {
+			success: false,
+			message: "No token found",
+			status: 401,
+			data: null,
+		} as CustomResponse<null>;
+	}
 	try {
-		const res = await axios.get(`${BaseUrl}/auth/refreshToken`, {
-			headers: header,
+		const res = await axios.post(`${BaseUrl}/auth/refresh-token`, {}, {
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: token,
+			},
 		});
-		//extract token from cookie
-		const headers = res.headers["set-cookie"];
-		if (!headers) {
-			return {
-				success: false,
-				message: "Something went wrong",
-				status: 404,
-				data: null,
-			} as CustomResponse<null>;
-		}
-		const newToken = headers[0].split(";")[0].split("=")[1];
+		console.log("[refreshToken] response:", res.status, "newToken:", !!res.data.token);
+		const newToken = res.data.token;
 		if (!newToken) {
 			return {
 				success: false,
@@ -34,6 +36,13 @@ export async function refreshToken() {
 				data: null,
 			} as CustomResponse<null>;
 		}
+		// Update the cookie with the new token
+		cookieStore.set("token", newToken, {
+			path: "/",
+			sameSite: "none",
+			httpOnly: true,
+			secure: true,
+		});
 		return {
 			success: true,
 			message: res.data.message,
@@ -41,6 +50,7 @@ export async function refreshToken() {
 			data: newToken,
 		} as CustomResponse<string>;
 	} catch (error: any) {
+		console.error("[refreshToken] error:", error.response?.status, error.response?.data);
 		return {
 			success: false,
 			message: error.response?.data?.message ?? "Failed to refresh token",
@@ -52,22 +62,26 @@ export async function refreshToken() {
 
 export async function fetchInfo() {
 	const cookieStore = cookies();
-	const res = await refreshToken();
-	const token = res.data ?? cookieStore.get("token")?.value;
-	const url = `${BaseUrl}/info`;
+	const token = cookieStore.get("token")?.value;
+	console.log("[fetchInfo] using token:", token ? token.slice(0, 20) + "..." : "NONE");
+	const url = `${BaseUrl}/user/me`;
 
 	try {
-		const res = await axios.get(url, {
-			headers: customHeader(token),
+		const response = await axios.get(url, {
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: token,
+			},
 		});
 
 		return {
 			success: true,
 			message: "",
-			status: res.status,
-			data: res.data,
+			status: response.status,
+			data: response.data,
 		} as CustomResponse<BasicUserInfo>;
 	} catch (error: any) {
+		console.error("[fetchInfo] error:", error.response?.status, error.response?.data);
 		return {
 			success: false,
 			message: "",
@@ -81,11 +95,14 @@ export async function fetchAlerts() {
 	const cookieStore = cookies();
 	const res = await refreshToken();
 	const token = res.data ?? cookieStore.get("token")?.value;
-	const url = `${BaseUrl}/api/vip2/get/alerts`;
+	const url = `${BaseUrl}/vip2/alerts`;
 
 	try {
 		const res = await axios.get(url, {
-			headers: customHeader(token),
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: token,
+			},
 		});
 
 		const triggerList: TriggerConditionData[] = [];
@@ -133,9 +150,10 @@ export async function fetchCoinList(currency: string, page: number) {
 			data: res.data,
 		} as CustomResponse<CoinData[]>;
 	} catch (error: any) {
+		console.error("[fetchCoinList] error:", error.response?.status, error.response?.data);
 		return {
 			success: false,
-			message: error.response.data.error,
+			message: error.response?.data?.error ?? "Failed to fetch coin list",
 			status: error.status,
 			data: [],
 		} as CustomResponse<CoinData[]>;

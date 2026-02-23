@@ -1,92 +1,71 @@
 "use client";
 import FlexBox from "@/src/components/Box/FlexBox";
 import {
-  CoinDetailData,
-  FundingRateData,
-  FuturePriceData,
-  KlineData,
-  SpotPriceData,
+	CoinDetailData,
+	FundingRateData,
+	FuturePriceData,
+	KlineData,
+	SpotPriceData,
 } from "@/src/types/coin";
 import { Accordion, AccordionItem } from "@nextui-org/react";
 import { useEffect, useState } from "react";
 
 interface Props {
-  coinDetail: CoinDetailData;
+	coinDetail: CoinDetailData;
 }
 
 export default function CustomAccordion({ coinDetail }: Props) {
-  const [spot, setSpot] = useState<SpotPriceData | null>(null);
-  const [future, setFuture] = useState<FuturePriceData | null>(null);
-  const [funding, setFunding] = useState<FundingRateData | null>(null);
-  const [kline, setKline] = useState<KlineData | null>(null);
+	const [spot, setSpot] = useState<SpotPriceData | null>(null);
+	const [future, setFuture] = useState<FuturePriceData | null>(null);
+	const [funding, setFunding] = useState<FundingRateData | null>(null);
+	const [kline, setKline] = useState<KlineData | null>(null);
 
-  useEffect(() => {
-		const symbols = coinDetail.symbol.toUpperCase() + "USDT";
-		const spotEventSource = new EventSource(`/api/spot?symbols=${symbols}`);
-		const futureEventSource = new EventSource(
-			`/api/future?symbols=${symbols}`
-		);
-		const fundingEventSource = new EventSource(
-			`/api/funding?symbols=${symbols}`
-		);
-		const klineEventSource = new EventSource(
-			`/api/kline?symbols=${symbols}`
-		);
+	useEffect(() => {
+		const symbol = coinDetail.symbol.toUpperCase() + "USDT";
 
-		spotEventSource.onmessage = (event) => {
-			const spotData = JSON.parse(event.data) as SpotPriceData;
-			setSpot(spotData);
-		};
+		async function fetchAll() {
+			try {
+				const [spotRes, futureRes, fundingRes, klineRes] = await Promise.allSettled([
+					fetch(`/api/spot?symbol=${symbol}`),
+					fetch(`/api/future?symbol=${symbol}`),
+					fetch(`/api/funding?symbol=${symbol}`),
+					fetch(`/api/kline?symbol=${symbol}`),
+				]);
 
-		spotEventSource.onerror = (error: any) => {
-			setSpot(null);
-			console.log(error);
-			spotEventSource.close();
-		};
+				if (spotRes.status === "fulfilled" && spotRes.value.ok) {
+					const spotData = (await spotRes.value.json()) as SpotPriceData;
+					setSpot(spotData);
+				}
 
-		futureEventSource.onmessage = (event) => {
-			const futureData = JSON.parse(event.data) as FuturePriceData;
-			setFuture(futureData);
-		};
+				if (futureRes.status === "fulfilled" && futureRes.value.ok) {
+					const futureData = (await futureRes.value.json()) as FuturePriceData;
+					setFuture(futureData);
+				}
 
-		futureEventSource.onerror = (error: any) => {
-			setFuture(null);
-			console.log(error);
-			futureEventSource.close();
-		};
+				if (fundingRes.status === "fulfilled" && fundingRes.value.ok) {
+					const fundingData = (await fundingRes.value.json()) as FundingRateData;
+					setFunding(fundingData);
+				}
 
-		fundingEventSource.onmessage = (event) => {
-			const fundingData = JSON.parse(event.data) as FundingRateData;
-			console.log(fundingData);
-			setFunding(fundingData);
-		};
+				if (klineRes.status === "fulfilled" && klineRes.value.ok) {
+					const klineData = (await klineRes.value.json()) as KlineData;
+					setKline(klineData);
+				}
+			} catch (err) {
+				console.error("Failed to fetch price data:", err);
+			}
+		}
 
-		fundingEventSource.onerror = (error: any) => {
-			setFunding(null);
-			console.log(error);
-			fundingEventSource.close();
-		};
+		fetchAll();
+	}, [coinDetail.symbol]);
 
-		klineEventSource.onmessage = (event) => {
-			const klineData = JSON.parse(event.data) as KlineData;
-			setKline(klineData);
-		};
+	// Latest kline candle (last item in the array)
+	const latestKline =
+		kline && kline.kline_data.length > 0
+			? kline.kline_data[kline.kline_data.length - 1]
+			: null;
 
-		klineEventSource.onerror = (error: any) => {
-			setKline(null);
-			console.log(error);
-			klineEventSource.close();
-		};
-
-		return () => {
-			spotEventSource.close();
-			futureEventSource.close();
-			fundingEventSource.close();
-			klineEventSource.close();
-		};
-  }, []);
-
-  return (
+	return (
 		<Accordion isCompact>
 			{coinDetail.market_data.market_cap.usd != null ? (
 				<AccordionItem
@@ -103,8 +82,8 @@ export default function CustomAccordion({ coinDetail }: Props) {
 							{`Market Cap = Current Price x Circulating Supply`}
 						</span>
 						<span>
-							{`Refers to the total market value of a cryptocurrency’s circulating
-            supply. It is similar to the stock market’s measurement of
+							{`Refers to the total market value of a cryptocurrency's circulating
+            supply. It is similar to the stock market's measurement of
             multiplying price per share by shares readily available in the
             market (not held & locked by insiders, governments)`}
 						</span>
@@ -174,13 +153,13 @@ export default function CustomAccordion({ coinDetail }: Props) {
 				</AccordionItem>
 			)}
 
-			{kline && (
+			{latestKline && kline && (
 				<AccordionItem
 					key="10"
 					title="Kline"
 					subtitle={
 						<span className="font-bold text-md text-black">
-							${parseFloat(kline.openPrice).toLocaleString()}
+							${latestKline.open.toLocaleString()}
 						</span>
 					}>
 					<FlexBox className="flex-col">
@@ -189,9 +168,9 @@ export default function CustomAccordion({ coinDetail }: Props) {
 								Open / Close:{" "}
 							</span>
 							<span className="text-sm">
-								${parseFloat(kline.openPrice).toLocaleString()}{" "}
+								${latestKline.open.toLocaleString()}
 								{" / "}$
-								{parseFloat(kline.closePrice).toLocaleString()}
+								{latestKline.close.toLocaleString()}
 							</span>
 						</FlexBox>
 						<FlexBox className="flex-row gap-2">
@@ -199,72 +178,27 @@ export default function CustomAccordion({ coinDetail }: Props) {
 								High / Low:{" "}
 							</span>
 							<span className="text-sm">
-								${parseFloat(kline.highPrice).toLocaleString()}
+								${latestKline.high.toLocaleString()}
 								{" / "}$
-								{parseFloat(kline.lowPrice).toLocaleString()}
+								{latestKline.low.toLocaleString()}
 							</span>
 						</FlexBox>
 
 						<FlexBox className="flex-row gap-2 mt-2">
 							<span className="font-bold text-sm">
-								Number of trades:{" "}
+								Volume:{" "}
 							</span>
 							<span className="text-sm">
-								{kline.numberOfTrades.toLocaleString()}
+								{latestKline.volume.toLocaleString()}
 							</span>
 						</FlexBox>
 
 						<FlexBox className="flex-row gap-2 mt-2">
 							<span className="font-bold text-sm">
-								Base asset volume:{" "}
+								Candle time:{" "}
 							</span>
 							<span className="text-sm">
-								{parseFloat(
-									kline.baseAssetVolume
-								).toLocaleString()}
-							</span>
-						</FlexBox>
-						<FlexBox className="flex-row gap-2">
-							<span className="font-bold text-sm">
-								Taker buy volume:{" "}
-							</span>
-							<span className="text-sm">
-								{parseFloat(
-									kline.takerBuyVolume
-								).toLocaleString()}
-							</span>
-						</FlexBox>
-						<FlexBox className="flex-row gap-2">
-							<span className="font-bold text-sm">
-								Taker buy base volume:{" "}
-							</span>
-							<span className="text-sm">
-								{parseFloat(
-									kline.takerBuyBaseVolume
-								).toLocaleString()}
-							</span>
-						</FlexBox>
-						<FlexBox className="flex-row gap-2">
-							<span className="font-bold text-sm">Volume: </span>
-							<span className="text-sm">
-								{parseFloat(kline.volume).toLocaleString()}
-							</span>
-						</FlexBox>
-
-						<FlexBox className="flex-row gap-2 mt-2">
-							<span className="font-bold text-sm">
-								Start time:{" "}
-							</span>
-							<span className="text-sm">
-								{kline.klineStartTime}
-							</span>
-						</FlexBox>
-						<FlexBox className="flex-row gap-2">
-							<span className="font-bold text-sm">
-								Close time:{" "}
-							</span>
-							<span className="text-sm">
-								{kline.klineCloseTime}
+								{latestKline.time}
 							</span>
 						</FlexBox>
 
@@ -386,5 +320,5 @@ export default function CustomAccordion({ coinDetail }: Props) {
 				</AccordionItem>
 			) : null}
 		</Accordion>
-  );
+	);
 }

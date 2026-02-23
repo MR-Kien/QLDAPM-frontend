@@ -7,6 +7,7 @@ interface Props {
 }
 
 export default async function layouts({ children }: Props) {
+  console.log("[private/layout] rendering");
   const res = await fetchInfo();
   return (
     <AuthProvider basicUserInfor={res.data}>

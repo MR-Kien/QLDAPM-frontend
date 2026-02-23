@@ -2,9 +2,9 @@
 
 import axios from "axios";
 import {
-  ForgotPasswordPayload,
-  ResetPasswordPayload,
-  SignupPayload,
+	ForgotPasswordPayload,
+	ResetPasswordPayload,
+	SignupPayload,
 } from "@/src/types/user";
 import { BaseUrl, customHeader } from "..";
 import { cookies } from "next/headers";
@@ -16,15 +16,16 @@ export async function signin(
 ) {
 	let url = "";
 	let payload = {};
-		url = `${BaseUrl}/auth/login`;
-		payload = {
-			username: identifier,
-			password: password,
-		};
+	url = `${BaseUrl}/auth/login`;
+	payload = {
+		username: identifier,
+		password: password,
+	};
 	try {
 		const res = await axios.post(url, payload, {
 			headers: customHeader(null),
 		});
+		console.log("[signin] response:", res.status, res.data);
 
 		const token = res.data.token;
 		if (!token) {
@@ -97,22 +98,22 @@ export async function signup(payload: SignupPayload) {
 export async function refreshToken() {
 	const cookieStore = cookies();
 	const token = cookieStore.get("token")?.value;
-	const header = customHeader(token);
 	try {
-		const res = await axios.get(`${BaseUrl}/auth/refreshToken`, {
-			headers: header,
-		});
-		//extract token from cookie
-		const headers = res.headers["set-cookie"];
-		if (!headers) {
+		if (!token) {
 			return {
 				success: false,
-				message: "Something went wrong",
-				status: 404,
+				message: "No token found",
+				status: 401,
 				data: null,
 			} as CustomResponse<null>;
 		}
-		const newToken = headers[0].split(";")[0].split("=")[1];
+		const res = await axios.post(`${BaseUrl}/auth/refresh-token`, {}, {
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: token,
+			},
+		});
+		const newToken = res.data.token;
 		if (!newToken) {
 			return {
 				success: false,
@@ -121,7 +122,6 @@ export async function refreshToken() {
 				data: null,
 			} as CustomResponse<null>;
 		}
-		const cookieStore = cookies();
 		cookieStore.set("token", newToken, {
 			path: "/",
 			sameSite: "none",
@@ -138,9 +138,7 @@ export async function refreshToken() {
 		console.error(error);
 		return {
 			success: false,
-			message: error.response.data
-				? error.response.data.message
-				: "Something went wrong",
+			message: error.response?.data?.message ?? "Something went wrong",
 			status: error.status,
 			data: null,
 		} as CustomResponse<null>;
@@ -148,39 +146,9 @@ export async function refreshToken() {
 }
 
 export async function forgotPassword(payload: ForgotPasswordPayload) {
-	const cookieStore = cookies();
-	const token = cookieStore.get("token")?.value;
-	const url = `${BaseUrl}/auth/forgotPassword?email=${payload.email}`;
+	const url = `${BaseUrl}/auth/forgot-password`;
 	try {
-		const res = await axios.get(url, {
-			headers: customHeader(token),
-		});
-		return {
-			success: true,
-			message: res.data.message,
-			status: res.status,
-			data: null,
-		} as CustomResponse<null>;
-	} catch (error: any) {
-		console.error(error);
-		return {
-			success: false,
-			message: error.response.data
-				? error.response.data.message
-				: "Something went wrong",
-			status: error.status,
-			data: null,
-		} as CustomResponse<null>;
-	}
-}
-
-export async function resetPassword(payload: ResetPasswordPayload) {
-	const url = `${BaseUrl}/auth/resetPassword?email=${payload.email}&otpCode=${payload.otp}`;
-	const newPayload = {
-		newPassword: payload.newPassword,
-	};
-	try {
-		const res = await axios.put(url, newPayload, {
+		const res = await axios.post(url, { email: payload.email }, {
 			headers: customHeader(null),
 		});
 		return {
@@ -193,9 +161,35 @@ export async function resetPassword(payload: ResetPasswordPayload) {
 		console.error(error);
 		return {
 			success: false,
-			message: error.response.data
+			message: error.response?.data
 				? error.response.data.message
 				: "Something went wrong",
+			status: error.status,
+			data: null,
+		} as CustomResponse<null>;
+	}
+}
+
+export async function resetPassword(payload: ResetPasswordPayload) {
+	const url = `${BaseUrl}/auth/reset-password`;
+	try {
+		const res = await axios.post(url, {
+			otp: payload.otp,
+			new_password: payload.newPassword,
+		}, {
+			headers: customHeader(null),
+		});
+		return {
+			success: true,
+			message: res.data.message,
+			status: res.status,
+			data: null,
+		} as CustomResponse<null>;
+	} catch (error: any) {
+		console.error(error);
+		return {
+			success: false,
+			message: error.response?.data?.message ?? "Something went wrong",
 			status: error.status,
 			data: null,
 		} as CustomResponse<null>;

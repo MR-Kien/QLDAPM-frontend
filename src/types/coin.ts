@@ -115,23 +115,23 @@ export type FundingRateData = {
   adjustedFundingRateCap: string;
   adjustedFundingRateFloor: string;
   eventTime: string;
-  fundingCountdown: string;
+  fundingCountDown: string;
   fundingIntervalHours: number;
   fundingRate: string;
 };
 
+export type KlineEntry = {
+  time: string; // RFC3339 formatted timestamp
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+};
+
 export type KlineData = {
   symbol: string; // Example: "BTCUSDT"
+  interval: string; // Example: "1m"
   eventTime: string; // Example: "2024-10-18 22:21:00"
-  klineStartTime: string; // Example: "2024-10-18 22:21:00"
-  klineCloseTime: string; // Example: "2024-10-18 22:21:00"
-  openPrice: string; // Example: "10000.00"
-  closePrice: string; // Example: "10000.00"
-  highPrice: string; // Example: "10000.00"
-  lowPrice: string; // Example: "10000.00"
-  numberOfTrades: number; // Example: 100
-  baseAssetVolume: string; // Example: "10000.00"
-  takerBuyVolume: string; // Example: "10000.00"
-  takerBuyBaseVolume: string; // Example: "10000.00"
-  volume: string; // Example: "10000.00"
+  kline_data: KlineEntry[]; // Array of candles, latest is last
 };

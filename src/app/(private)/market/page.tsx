@@ -15,8 +15,10 @@ interface Props {
 
 export default async function Page({ searchParams }: Props) {
   const page = searchParams.page || 1;
+  console.log("[market/page] rendering, page:", page);
   const fetchRes = await fetchCoinList("usd", page);
-  const coinList = fetchRes.data;
+  console.log("[market/page] fetchCoinList result — success:", fetchRes.success, "count:", fetchRes.data?.length ?? "null", "msg:", fetchRes.message);
+  const coinList = fetchRes.data ?? [];
 
   return (
     <Container className="py-20">

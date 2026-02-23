@@ -17,63 +17,39 @@ export default function Page() {
   const [kline, setKline] = useState<KlineData | null>(null);
 
   useEffect(() => {
-    const spotEventSource = new EventSource("/api/spot?symbols=BTCUSDT");
-    const futureEventSource = new EventSource("/api/future?symbols=BTCUSDT");
-    const fundingEventSource = new EventSource("/api/funding?symbols=BTCUSDT");
-    const klineEventSource = new EventSource("/api/kline?symbols=BTCUSDT");
+    async function fetchAll() {
+      try {
+        const [spotRes, futureRes, fundingRes, klineRes] = await Promise.allSettled([
+          fetch("/api/spot?symbol=BTCUSDT"),
+          fetch("/api/future?symbol=BTCUSDT"),
+          fetch("/api/funding?symbol=BTCUSDT"),
+          fetch("/api/kline?symbol=BTCUSDT"),
+        ]);
 
-    spotEventSource.onmessage = (event) => {
-      const spotData = JSON.parse(event.data) as SpotPriceData;
-      setSpot(spotData);
-    };
+        if (spotRes.status === "fulfilled" && spotRes.value.ok) {
+          setSpot((await spotRes.value.json()) as SpotPriceData);
+        }
+        if (futureRes.status === "fulfilled" && futureRes.value.ok) {
+          setFuture((await futureRes.value.json()) as FuturePriceData);
+        }
+        if (fundingRes.status === "fulfilled" && fundingRes.value.ok) {
+          setFunding((await fundingRes.value.json()) as FundingRateData);
+        }
+        if (klineRes.status === "fulfilled" && klineRes.value.ok) {
+          setKline((await klineRes.value.json()) as KlineData);
+        }
+      } catch (err) {
+        console.error("Failed to fetch price data:", err);
+      }
+    }
 
-    spotEventSource.onerror = (error) => {
-      setSpot(null);
-      console.error("SSE Error:", error);
-      spotEventSource.close();
-    };
-
-    futureEventSource.onmessage = (event) => {
-      const futureData = JSON.parse(event.data) as FuturePriceData;
-      setFuture(futureData);
-    };
-
-    futureEventSource.onerror = (error) => {
-      setFuture(null);
-      console.error("SSE Error:", error);
-      futureEventSource.close();
-    };
-
-    fundingEventSource.onmessage = (event) => {
-      const fundingData = JSON.parse(event.data) as FundingRateData;
-      console.log(fundingData);
-      setFunding(fundingData);
-    };
-
-    fundingEventSource.onerror = (error) => {
-      setFunding(null);
-      console.error("SSE Error:", error);
-      fundingEventSource.close();
-    };
-
-    klineEventSource.onmessage = (event) => {
-      const klineData = JSON.parse(event.data) as KlineData;
-      setKline(klineData);
-    };
-
-    klineEventSource.onerror = (error) => {
-      setKline(null);
-      console.error("SSE Error:", error);
-      klineEventSource.close();
-    };
-
-    return () => {
-      spotEventSource.close();
-      futureEventSource.close();
-      fundingEventSource.close();
-      klineEventSource.close();
-    };
+    fetchAll();
   }, []);
+
+  const latestKline =
+    kline && kline.kline_data.length > 0
+      ? kline.kline_data[kline.kline_data.length - 1]
+      : null;
 
   return (
     <Container>
@@ -96,10 +72,10 @@ export default function Page() {
             <span>{`${parseFloat(funding.fundingRate)}%`}</span>
           </FlexBox>
         )}
-        {kline && (
+        {latestKline && (
           <FlexBox className="flex-col gap-2">
             <H1>Kline</H1>
-            <span>{`${parseFloat(kline.highPrice).toFixed(2)}$`}</span>
+            <span>{`${latestKline.high.toFixed(2)}$`}</span>
           </FlexBox>
         )}
       </FlexBox>
