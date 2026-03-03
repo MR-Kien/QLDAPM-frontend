@@ -1,7 +1,7 @@
 import axios from "axios";
 import { NextRequest } from "next/server";
 import { cookies } from "next/headers";
-import { BaseUrl, customHeader } from "@/src/libs";
+import { BaseUrl } from "@/src/libs";
 
 export async function GET(req: NextRequest): Promise<Response> {
 	const cookieStore = cookies();

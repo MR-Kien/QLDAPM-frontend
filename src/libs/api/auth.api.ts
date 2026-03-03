@@ -11,7 +11,6 @@ import {
 export function signin(
 	identifier: string,
 	password: string,
-	signinType?: string
 ): Observable<CustomResponse<null>> {
 	return httpService
 		.post<{ token: string; message: string }>("/auth/login", {

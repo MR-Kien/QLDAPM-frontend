@@ -13,7 +13,6 @@ import { redirect } from "next/navigation";
 export async function signin(
 	identifier: string,
 	password: string,
-	signinType: string
 ) {
 	let url = "";
 	let payload = {};

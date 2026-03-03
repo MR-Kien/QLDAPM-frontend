@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { BaseUrl, customHeader } from "..";
+import { BaseUrl } from "..";
 import axios from "axios";
 import { BasicUserInfo } from "@/src/types/user";
 import { IndicatorTrigerData, TriggerConditionData } from "@/src/types/alert";
