@@ -26,12 +26,14 @@ export default function SignInForm() {
     password: "",
   });
   const [isShowPassword, setIsShowPassword] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
 
   const toggleShowPassword = () => {
     setIsShowPassword(!isShowPassword);
   };
 
   const handleSignIn = async () => {
+    setError("");
     const res = await signin(
       loginFormData.identifier,
       loginFormData.password,
@@ -43,6 +45,7 @@ export default function SignInForm() {
       router.refresh();
       router.push("/market");
     } else {
+      setError(res.message);
       toast.error(res.message);
     }
   };
@@ -88,6 +91,8 @@ export default function SignInForm() {
         label="Password"
         type={isShowPassword ? "text" : "password"}
         isRequired
+        isInvalid={!!error}
+        errorMessage={error}
         value={loginFormData.password}
         endContent={
           <button

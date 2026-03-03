@@ -29,12 +29,14 @@ export default function SignUpForm() {
     confirmPassword: "",
   });
   const [isShowPass, setisShowPass] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
 
   const Showpass = () => {
     setisShowPass(!isShowPass);
   };
 
   const handleSubmit = async () => {
+    setError("");
     if (
       signupForm.name === "" ||
       signupForm.username === "" ||
@@ -47,6 +49,7 @@ export default function SignUpForm() {
     }
 
     if (signupForm.password !== signupForm.confirmPassword) {
+      setError("Password does not match");
       toast.error("Password does not match");
       return;
     }
@@ -62,6 +65,7 @@ export default function SignUpForm() {
       toast.success("Sign up successfully");
       router.push("/signin");
     } else {
+      setError(res.message);
       toast.error(res.message);
     }
   };
@@ -108,6 +112,8 @@ export default function SignUpForm() {
         label="Password"
         type={isShowPass ? "text" : "password"}
         isRequired
+        isInvalid={!!error && error !== "Password does not match"}
+        errorMessage={error !== "Password does not match" ? error : ""}
         value={signupForm.password}
         endContent={
           <button
@@ -133,6 +139,8 @@ export default function SignUpForm() {
         label="Confirm Password"
         type={isShowPass ? "text" : "password"}
         isRequired
+        isInvalid={!!error && error === "Password does not match"}
+        errorMessage={error === "Password does not match" ? error : ""}
         value={signupForm.confirmPassword}
         endContent={
           <button

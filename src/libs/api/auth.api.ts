@@ -35,6 +35,9 @@ export function signin(
 
 export function signout(): void {
 	tokenService.clearToken();
+	if (typeof window !== "undefined") {
+		window.location.href = "/signin";
+	}
 }
 
 export function signup(

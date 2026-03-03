@@ -8,6 +8,7 @@ import {
 } from "@/src/types/user";
 import { BaseUrl, customHeader } from "..";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 export async function signin(
 	identifier: string,
@@ -54,9 +55,7 @@ export async function signin(
 		console.error(error);
 		return {
 			success: false,
-			message: error.response.data
-				? error.response.data.message
-				: "Something went wrong",
+			message: error.response?.data?.message || error.response?.data?.error || "Something went wrong",
 			status: error.status,
 			data: null,
 		} as CustomResponse<null>;
@@ -66,6 +65,7 @@ export async function signin(
 export async function signout() {
 	const cookieStore = cookies();
 	cookieStore.delete("token");
+	redirect("/signin");
 }
 
 export async function signup(payload: SignupPayload) {
@@ -86,9 +86,7 @@ export async function signup(payload: SignupPayload) {
 		console.error(error);
 		return {
 			success: false,
-			message: error.response.data
-				? error.response.data.message
-				: "Something went wrong",
+			message: error.response?.data?.message || error.response?.data?.error || "Something went wrong",
 			status: error.status,
 			data: null,
 		} as CustomResponse<null>;
@@ -138,7 +136,7 @@ export async function refreshToken() {
 		console.error(error);
 		return {
 			success: false,
-			message: error.response?.data?.message ?? "Something went wrong",
+			message: error.response?.data?.message || error.response?.data?.error || "Something went wrong",
 			status: error.status,
 			data: null,
 		} as CustomResponse<null>;
@@ -161,9 +159,7 @@ export async function forgotPassword(payload: ForgotPasswordPayload) {
 		console.error(error);
 		return {
 			success: false,
-			message: error.response?.data
-				? error.response.data.message
-				: "Something went wrong",
+			message: error.response?.data?.message || error.response?.data?.error || "Something went wrong",
 			status: error.status,
 			data: null,
 		} as CustomResponse<null>;
@@ -189,7 +185,7 @@ export async function resetPassword(payload: ResetPasswordPayload) {
 		console.error(error);
 		return {
 			success: false,
-			message: error.response?.data?.message ?? "Something went wrong",
+			message: error.response?.data?.message || error.response?.data?.error || "Something went wrong",
 			status: error.status,
 			data: null,
 		} as CustomResponse<null>;
